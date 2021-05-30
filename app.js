@@ -4,13 +4,18 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const admin = require("firebase-admin");
 
+const serviceAccount = JSON.parse(process.env.FIREBASE_KEYS);
 const mongoClient = require("./config/bd");
 const indexRouter = require('./routes/index');
 const plocsRouter = require("./routes/plocs");
 const usersRouter = require('./routes/users');
 
 mongoClient.connect(process.env.BD_URL);
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 const app = express();
 
 // view engine setup

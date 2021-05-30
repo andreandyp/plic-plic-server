@@ -1,4 +1,4 @@
-const { MongoClient } = require("mongodb");
+const { MongoClient, Db } = require("mongodb");
 let client = null;
 
 async function connect(url) {
@@ -17,6 +17,10 @@ async function connect(url) {
 
 module.exports = {
 	connect,
+	/**
+	 * 
+	 * @returns {Db} 
+	 */
 	get() {
 		if (client === null) {
 			return;

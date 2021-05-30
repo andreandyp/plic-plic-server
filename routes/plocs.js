@@ -1,5 +1,6 @@
 const { ObjectID } = require("bson");
 const { Router } = require("express");
+const admin = require("firebase-admin");
 const router = Router();
 
 const db = require("../config/bd");
@@ -18,11 +19,13 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-	const { userId, replyId, message, dateTime, hashtags, media, location, replies, mentions } =
+	const { tokenId, replyId, message, dateTime, hashtags, media, location, replies, mentions } =
 		req.body;
 
+	const decodedIdToken = await admin.auth().verifyIdToken(tokenId, true);
+
 	const result = await db.get().collection(PLOCS_COLLECTION).insertOne({
-		userId,
+		userId: decodedIdToken.uid,
 		replyId,
 		message,
 		dateTime,
@@ -38,7 +41,15 @@ router.post("/", async (req, res) => {
 	res.send(result.ops[0]);
 });
 
-router.delete("/", (req, res) => {
+router.delete("/:id", (req, res) => {
+	const {tokenId} = req.body;
+	const {id} = req.params;
+	await admin.auth().verifyIdToken(tokenId, true);
+
+	await db.get().collection(PLOCS_COLLECTION).deleteOne({
+		_id: ObjectID(id),
+	})
+
 	res.send("Ploc eliminado");
 });
 
