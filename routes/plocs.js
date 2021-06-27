@@ -1,56 +1,51 @@
-const { ObjectID } = require("bson");
 const { Router } = require("express");
-const admin = require("firebase-admin");
 const router = Router();
-
-const db = require("../config/bd");
-
-const PLOCS_COLLECTION = "plocs";
+const PlocsService = require("../services/PlocsService");
+const Ploc = require("../data/Ploc");
+const plocsService = new PlocsService();
 
 router.get("/", async (req, res) => {
-	const result = await db.get().collection(PLOCS_COLLECTION).find().toArray();
-	res.send(result);
+	const {error, data} = await plocsService.getAllPlocs();
+	if(error === null) {
+		return res.send(data);
+	}
+	
+	return res.status(500).send(error);
 });
 
 router.get("/:id", async (req, res) => {
     const plocId = req.params.id;
-    const ploc = await db.get().collection(PLOCS_COLLECTION).findOne({ _id: new ObjectID(plocId) })
-    res.send(ploc);
+	const {error, data} = await plocsService.getPlocById(plocId);
+
+	if(error === null) {
+		return res.send(data);
+	}
+
+	return res.status(500).send(error);
 });
 
 router.post("/", async (req, res) => {
 	const { tokenId, replyId, message, dateTime, hashtags, media, location, replies, mentions } =
 		req.body;
 
-	const decodedIdToken = await admin.auth().verifyIdToken(tokenId, true);
+	const newPloc = new Ploc(tokenId, replyId, message, dateTime, hashtags, media, location, replies, mentions, 0, 0)
+	const {error, data} = await plocsService.createPloc(tokenId, newPloc);
+	if(error === null) {
+		return res.send(data);
+	}
 
-	const result = await db.get().collection(PLOCS_COLLECTION).insertOne({
-		userId: decodedIdToken.uid,
-		replyId,
-		message,
-		dateTime,
-		hashtags,
-		media,
-		location,
-		replies,
-		mentions,
-		likes: 0,
-		replocs: 0,
-	});
-
-	res.send(result.ops[0]);
+	return res.status(500).send(error);
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", async (req, res) => {
 	const {tokenId} = req.body;
 	const {id} = req.params;
-	await admin.auth().verifyIdToken(tokenId, true);
-
-	await db.get().collection(PLOCS_COLLECTION).deleteOne({
-		_id: ObjectID(id),
-	})
-
-	res.send("Ploc eliminado");
+	const {error, data} = await plocsService.deletePloc(tokenId, id);
+	if(error === null) {
+		return res.send(data)
+	}
+	
+	return res.status(500).send(error);
 });
 
 module.exports = router;
