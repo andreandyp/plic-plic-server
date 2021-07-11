@@ -23,8 +23,12 @@ class PlocsService {
 
     async createPloc(tokenId, ploc) {
         try {
-            const decodedIdToken = await admin.auth().verifyIdToken(tokenId, true);
-            const userId = decodedIdToken.uid;
+            const result = await this.verifyFirebaseUser(tokenId);
+            if(result.error) {
+                return result;
+            }
+
+            const userId = result.uid;
             const createdPloc = await plocDAO.createPloc(userId, ploc)
             return {error: null, data: createdPloc};
         } catch (error) {
@@ -34,8 +38,12 @@ class PlocsService {
 
     async deletePloc(tokenId, plocId) {
         try {
-            const decodedIdToken = await admin.auth().verifyIdToken(tokenId, true);
-            const userId = decodedIdToken.uid;
+            const result = await this.verifyFirebaseUser(tokenId);
+            if(result.error) {
+                return result;
+            }
+
+            const userId = result.uid;
 
             const result = await this.getPlocById(plocId)
             if(result.data.userId === userId) {
@@ -46,6 +54,20 @@ class PlocsService {
             return {error: "Ploc no corresponde a usuario", data: null}
         } catch (error) {
             console.log(error);
+            return {error, data: null}
+        }
+    }
+
+    /**
+     * Verifies the user's Firebase Token ID
+     * @param {string} tokenId Firebase Token ID
+     * @returns {object}
+     */
+    async verifyFirebaseUser(tokenId) {
+        try {
+            const result = await this.admin.auth().verifyIdToken(tokenId, true);
+            return {error: null, data: result}
+        } catch (error) {
             return {error, data: null}
         }
     }
